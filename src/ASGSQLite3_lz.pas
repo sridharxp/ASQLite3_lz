@@ -4689,7 +4689,11 @@ begin
       if TheWord = '*' then
       begin
         for i := 0 to FieldList.Count - 1 do
+        begin
+          if Fields[i].FieldKind in [fkCalculated, fkLookup] then
+          Continue;
           SQLStr := SQLStr +FieldList[i].FieldName+'='+':'+ FieldList[i].FieldName+',';
+        end;
         System.Delete(SQLStr, Length(SQLStr), 1);
 
         SQLStr := SQLStr + Copy(MySQL, startpos, 9999);
@@ -4755,6 +4759,8 @@ begin
 
          TempSQL := '';
          for i := 0 to FieldList.Count - 1 do begin
+          if Fields[i].FieldKind in [fkCalculated, fkLookup] then
+          Continue;
              SQLStr := SQLStr + FieldList[i].FieldName +',';
              TempSQL := TempSQL + ':'+FieldList[i].FieldName +',';
          end;
