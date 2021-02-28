@@ -3986,7 +3986,7 @@ begin
       case FieldDefs.Items[i].Datatype of
         ftMemo, ftGraphic, ftBlob, ftFmtMemo, ftVariant: begin
             Stream := TMemoryStream.Create;
-            Move(Pointer(Stream), (Buffer + GetFieldOffset(i + 1))^, sizeof(Pointer)+1); //2007
+            Move(Stream, (Buffer + GetFieldOffset(i + 1))^, sizeof(Stream)+1); //2021
         end;
         ftString: PAnsiChar(Buffer + GetFieldOffset(i + 1))^ := #0;
 //        ftWideString: PWideChar(Buffer + GetFieldOffset(i + 1))^ := #0;
@@ -4695,8 +4695,9 @@ begin
           SQLStr := SQLStr +FieldList[i].FieldName+'='+':'+ FieldList[i].FieldName+',';
         end;
         System.Delete(SQLStr, Length(SQLStr), 1);
+      TheWord := GetWord(MySQL, startpos, vartype); // set or '*'
 
-        SQLStr := SQLStr + Copy(MySQL, startpos, 9999);
+//      SQLStr := SQLStr + Copy(MySQL, startpos, 9999);
       end else begin
         if not SyntaxCheck(TheWord, 'set') then
            raise AsgError.Create('Syntax error: "set" expected');
