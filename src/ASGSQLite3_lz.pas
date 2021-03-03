@@ -363,6 +363,7 @@ type
     procedure SQLite3_CloseResult(TheStatement : pointer);
     procedure SetTimeOut(const Value: integer); // sean
   public
+    BList: IStrMap;
     DLLHandle: THandle;
     { Public declarations }
     constructor Create(AOwner: TComponent); override;
@@ -1920,10 +1921,16 @@ begin
                 BlobStream := TMemoryStream.Create;
                 BlobStream.Write(pData^, SQLite3_Column_bytes(theStatement, i));
                 Move(BlobStream, (ResultStr + GetFieldOffset(i + 1))^, SizeOf(BlobStream)+1); //2007
+                if BList.ContainsKey(InttoStr(integer(TheStatement))) then
+                begin
+                  Bstream := TMemoryStream(BList.GetValue(InttoStr(integer(TheStatement))));
+                  BStream.Free;
+                end;
+                BList.PutValue(InttoStr(integer(theStatement)), TObject(BlobStream));
               end; // DI
               else // DI
               begin // DI
-                UnpackBuffer(pData, FieldDefs[i].DataType, ConvertBuf);
+                UnpackBuffer(pAnsiChar(pData), FieldDefs[i].DataType, ConvertBuf);
                 Move(convertbuf, (ResultStr + GetFieldOffset(i + 1))^, GetFieldSize(i + 1)+1);
               end;
             end;
@@ -2038,7 +2045,7 @@ function TASQLite3DB.FGetDefaultExt: string;
 begin
   DebugEnter('TASQLite3DB.FGetDefaultExt');
   if FDefaultExt = '' then
-    FDefaultExt := '.sqb';
+    FDefaultExt := '.db';
   FGetDefaultExt := FDefaultExt;
   DebugLeave('TASQLite3DB.FGetDefaultExt');
 end;
@@ -2058,7 +2065,7 @@ var
 begin
   DebugEnter('TASQLite3DB.ShowDatabases');
   if DefaultExt = '' then
-    DefaultExt := '.sqb';
+    DefaultExt := '.db';
   if DefaultExt[1] <> '.' then
     DefaultExt := '.' + DefaultExt;
   if DefaultDir <> '' then
@@ -2762,6 +2769,7 @@ begin
   ASQLitePragma := nil;
   inherited Create(AOwner);
   DebugLeave('TASQLite3DB.Create');
+  BList := TStrHashMap.Create;
 end;
 
 destructor TASQLite3DB.Destroy;
@@ -2770,6 +2778,7 @@ begin
   Connected := false;
   ASQLiteLog := nil;
   ASQLitePragma := nil;
+  BList.Clear;
   inherited Destroy;
   DebugLeave('TASQLite3DB.Destroy');
 end;
