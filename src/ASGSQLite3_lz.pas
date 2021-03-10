@@ -1864,7 +1864,7 @@ var
   convertbuf: TConvertBuffer;
   pData: PAnsiChar;
   pWideData : PWideChar;
-  BlobStream: TMemoryStream;
+  BlobStream, BStream: TMemoryStream;
 begin
   result := nil;
   with (Sender as TASQLite3BaseQuery) do begin
@@ -1918,19 +1918,21 @@ begin
               ftMemo, ftGraphic, ftBlob, ftVariant: begin// DI
                 // create memory stream to save blob;
                 pData := SQLite3_Column_blob(theStatement, i);
-                BlobStream := TMemoryStream.Create;
+
+                if BList.ContainsKey(InttoStr(NativeInt(TheStatement))) then
+                  BLOBstream := TMemoryStream(BList.GetValue(InttoStr(NativeInt(TheStatement))))
+                else
+                begin
+                  BlobStream := TMemoryStream.Create;
+                  BList.PutValue(InttoStr(NativeInt(theStatement)), TObject(BlobStream));
+                end;
+                BlobStream.Clear;
                 BlobStream.Write(pData^, SQLite3_Column_bytes(theStatement, i));
                 Move(BlobStream, (ResultStr + GetFieldOffset(i + 1))^, SizeOf(BlobStream)+1); //2007
-                if BList.ContainsKey(InttoStr(integer(TheStatement))) then
-                begin
-                  Bstream := TMemoryStream(BList.GetValue(InttoStr(integer(TheStatement))));
-                  BStream.Free;
-                end;
-                BList.PutValue(InttoStr(integer(theStatement)), TObject(BlobStream));
               end; // DI
               else // DI
               begin // DI
-                UnpackBuffer(pAnsiChar(pData), FieldDefs[i].DataType, ConvertBuf);
+                UnpackBuffer(pData, FieldDefs[i].DataType, ConvertBuf);
                 Move(convertbuf, (ResultStr + GetFieldOffset(i + 1))^, GetFieldSize(i + 1)+1);
               end;
             end;
@@ -2767,9 +2769,9 @@ begin
   FInTransaction := false;
   ASQLiteLog := nil;
   ASQLitePragma := nil;
+  BList := TStrHashMap.Create(16, True);
   inherited Create(AOwner);
   DebugLeave('TASQLite3DB.Create');
-  BList := TStrHashMap.Create;
 end;
 
 destructor TASQLite3DB.Destroy;
@@ -3192,7 +3194,7 @@ begin
   DebugEnter('TASQLite3BaseQuery.Create');
   MaxStrLen := 0;
   FSQL          := TStringList.Create;
-  FParams       := TParams.Create(Self);
+  FParams       := TParams.Create(nil);
   DetailList    := TList.Create;
   FConnection   := nil;
   FResult       := nil;
@@ -3995,7 +3997,8 @@ begin
       case FieldDefs.Items[i].Datatype of
         ftMemo, ftGraphic, ftBlob, ftFmtMemo, ftVariant: begin
             Stream := TMemoryStream.Create;
-            Move(Stream, (Buffer + GetFieldOffset(i + 1))^, sizeof(Stream)+1); //2021
+            Move(Pointer(Stream), (Buffer + GetFieldOffset(i + 1))^, sizeof(Pointer)+1); //2007
+            Connection.BList.PutValue(InttoStr(NativeInt(Buffer)), TObject(Stream));
         end;
         ftString: PAnsiChar(Buffer + GetFieldOffset(i + 1))^ := #0;
 //        ftWideString: PWideChar(Buffer + GetFieldOffset(i + 1))^ := #0;
@@ -5243,6 +5246,7 @@ begin
   FField := Field;
   FMode := Mode;
   FDataSet := FField.DataSet as TASQLite3BaseQuery;
+  FConnection := FDataset.Connection;
   if Mode <> bmWrite then
     LoadBlobData;
 end;
@@ -5277,7 +5281,7 @@ var
   RecBuffer         : PAnsiChar;
 begin
   DebugEnter('ASQLiteBlobStream.LoadBlobData');
-  Self.Size := 0;
+  Size := 0;
   FDataset.GetActiveBuffer(RecBuffer);
 
 //  recbuffer := nil;
@@ -5286,7 +5290,8 @@ begin
   begin
     Offset := FDataset.GetFieldOffset(FField.FieldNo);
     Move((RecBuffer + Offset)^, Pointer(Stream), sizeof(Pointer));
-    Self.CopyFrom(Stream, 0);
+    if Assigned(Stream) then
+      CopyFrom(Stream, 0);
   end;
   Position := 0;
 end;
@@ -5303,10 +5308,20 @@ begin
   begin
     Offset := FDataset.GetFieldOffset(FField.FieldNo);
     Move((RecBuffer + Offset)^, Pointer(Stream), sizeof(Pointer));
+    if not Assigned(Stream) then
+    begin
+      Stream := TMemoryStream.Create;
+      Move(Pointer(Stream), (RecBuffer + Offset)^, sizeof(Pointer)+1); //2007
+      FConnection.BList.PutValue(InttoStr(NativeInt(FDataset.FStateMent)), TObject(Stream));
+    end;
+    if Assigned(Stream) then
+    begin
     Stream.Size := 0;
     Stream.CopyFrom(Self, 0);
     Stream.Position := 0;
+    end;
   end;
+  Position := 0; // New Memo Fix  2021
 end;
 
 // Inline sql can be used to store sqlstatements outside of the pascal source.

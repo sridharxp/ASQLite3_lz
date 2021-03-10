@@ -268,7 +268,7 @@ var
   sr: TSearchRec;
 begin
   with GetComponent(0) as TASQLite3DB do begin
-    if DefaultExt = '' then DefaultExt := '.sqb';
+    if DefaultExt = '' then DefaultExt := '.db';
     if DefaultExt[1]<> '.' then DefaultExt := '.'+DefaultExt;
     if DefaultDir = '' then
        DefaultDir := GetCurrentDir;
