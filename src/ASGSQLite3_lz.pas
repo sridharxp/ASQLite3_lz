@@ -57,7 +57,7 @@ Legal issues: Copyright (C) 2003..2008 by Aducom Software
               THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
               "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
               TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
-              PARTICULAR PURPOSE ARE DISCLAIMED. IN NO   SHALL THE
+              PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
               COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
               INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
               DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
@@ -612,7 +612,7 @@ type
 {$ENDIF}
     function GetRecordSize: word; override;
     procedure InternalAddRecord(Buffer: Pointer; Append: boolean); override;
-    procedure DataEvent(Event: TDataEvent; Info: NativeInt);
+    procedure DataEvent(Event: TDataEvent; Info: LongInt); override;
     procedure InternalClose; override;
     procedure InternalDelete; override;
     procedure InternalFirst; override;
@@ -641,7 +641,7 @@ type
     function GetMasterFields: string;
     procedure SetMasterFields(const Value: string);
     { Additional overrides (optional) }
-    function GetRecordCount: integer;
+    function GetRecordCount: integer; override;
     function GetRecNo: integer; override;
     procedure SetRecNo(Value: integer); override;
     property BaseSQL: TStrings read FSQL write SetSQL;
@@ -690,7 +690,7 @@ type
     procedure SetFiltered(Value: Boolean); override;
     procedure SQLiteMasterChanged(const AIsNull: Boolean); virtual;
     function GetFieldData(Field: TField; Buffer: Pointer): boolean; override;
-    function GetFieldData(FieldNo: integer; Buffer: Pointer): boolean; // 20040225
+    function GetFieldData(FieldNo: integer; Buffer: Pointer): boolean; override; // 20040225
     function GetLastInsertRow: integer;
 {$IFDEF ASQLITE_D6PLUS}
 //    function GetFieldData(Field: TField; Buffer: Pointer; NativeFormat: boolean): boolean; override;
@@ -701,6 +701,7 @@ type
     function Locate(const KeyFields: string; const KeyValues: variant; Options: TLocateOptions): boolean; override;
     function BookmarkValid(Bookmark: TBookmark): boolean; override;
 //    function    LocateNearest(const KeyFields: String; const KeyValues: Variant; Options: TLocateOptions): Boolean;
+    property Params: TParams read FParams write SetParamsList stored false;
     function Lookup(const KeyFields: string; const KeyValues: Variant;          // John Lito
                     const ResultFields: string): Variant; override;             // John Lito
     property Params: TParams read FParams write SetParamsList stored false;
@@ -2859,7 +2860,7 @@ begin
        inherited DataConvert(Field, Source, Dest, ToNative);
  end;//DataConvert
 
-procedure TASQlite3BaseQuery.DataEvent(Event: TDataEvent; Info: NativeInt);
+procedure TASQlite3BaseQuery.DataEvent(Event: TDataEvent; Info: LongInt);
 var i : integer;
 begin
 
@@ -3090,7 +3091,7 @@ begin
 {$ENDIF}
         exit;
       end;
-    ftInteger, ftSmallInt:
+    ftInteger, ftSmallInt, ftAutoInc:
       begin
         TempInt := StrToIntX(Buffer);
 //        Move(TempInt, result, sizeof(TempInt));
@@ -3459,7 +3460,7 @@ begin
   case FieldDefs.Items[FieldNo - 1].Datatype of
     ftString: Result := FieldDefs.Items[FieldNo - 1].Size + 1;
     ftWideString: Result := (FieldDefs.Items[FieldNo - 1].Size + 2);
-    ftInteger, ftSmallInt, ftDate, ftTime: Result := 12;
+    ftInteger, ftSmallInt, ftDate, ftTime, ftAutoInc: Result := 12;
     ftDateTime: Result := 20;
 {$IFDEF ASQLITE_D6PLUS}
     ftTimeStamp: inc(Result, 23);
@@ -3486,7 +3487,7 @@ begin
   case FieldDefs.Items[FieldNo - 1].Datatype of
     ftString: Result := FieldDefs.Items[FieldNo - 1].Size + 1 ;  // GPA - Warning UTF-8 length can be potentially > Ansi length
     ftWideString: Result := (FieldDefs.Items[FieldNo - 1].Size) +  2 ;
-    ftInteger, ftSmallInt, ftDate, ftTime: Inc(Result, sizeof(integer));
+    ftInteger, ftSmallInt, ftDate, ftTime, ftAutoInc: Inc(Result, sizeof(integer));
     ftDateTime: Inc(Result, sizeof(TDateTime));
 {$IFDEF ASQLITE_D6PLUS}
     ftTimeStamp: inc(Result, Sizeof(TTimeStamp));
@@ -3513,7 +3514,7 @@ begin
   case Field.DataType of
     ftString: Result := Field.Size + 1;
     ftWideString: Result := Field.Size + 2;
-    ftInteger, ftSmallInt, ftDate, ftTime: Inc(Result, sizeof(integer));
+    ftInteger, ftSmallInt, ftDate, ftTime, ftAutoInc: Inc(Result, sizeof(integer));
     ftDateTime: Inc(Result, sizeof(TDateTime));
     ftFloat, ftBCD, ftCurrency: Inc(Result, sizeof(double));
     ftBoolean: Inc(Result, sizeof(wordbool));
@@ -3621,7 +3622,7 @@ begin
   MaxStrLen := 0;
   if (Connection = nil) then
   begin                                 // check to see if a valid database
-    raise AsgError.Create('no database connection');
+    raise AsgError.Create(Self.Name + ': ' +'No database connection');
   end
   else
   begin
@@ -4006,7 +4007,7 @@ begin
         ftBoolean: pBoolean(Buffer + GetFieldOffset(i + 1))^ := false;
         ftFloat: pFloat(Buffer + GetFieldOffset(i + 1))^ := 0;
         ftSmallInt: pSmallInt(Buffer + GetFieldOffset(i + 1))^ := 0;
-        ftInteger: pInteger(Buffer + GetFieldOffset(i + 1))^ := integer(nil);
+        ftInteger, ftAutoInc: pInteger(Buffer + GetFieldOffset(i + 1))^ := integer(nil);
         ftCurrency: pFloat(Buffer + GetFieldOffset(i + 1))^ := 0;
         ftDate:
           begin
