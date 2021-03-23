@@ -403,6 +403,8 @@ type
     procedure SetSchemaVersion(Version : integer; Database : string='');
     function InTransaction : boolean;
     property Encoding: TASQLiteCharset read fEncoding;
+    procedure FreeBlob(const rid: pointer);
+	
   published
     { Published declarations }
     property TimeOut: integer read FTimeOut write SetTimeOut;
@@ -483,7 +485,7 @@ type
   public
     constructor Create(TheDataSet: TASQLite3BaseQuery);
     destructor Destroy; override;
-    procedure FreeBlobs;
+{    procedure FreeBlobs; }
     procedure SetBufSize(TheSize: integer);
     procedure Add(TheBuffer: PAnsiChar; TheRowId: integer);
     procedure Insert(Index: integer; TheBuffer: Pointer; TheRowId: integer);
@@ -1260,7 +1262,7 @@ var
   i                 : integer;
 begin
   DebugEnter('TFResult.Destroy');
-  FreeBlobs;
+{  FreeBlobs; }
   if Assigned(Data) then begin
     for i := 0 to Data.Count - 1 do begin
       ptr := Data.Items[i];
@@ -1302,6 +1304,7 @@ begin
     end;
   end;
 end;
+}
 
 procedure TFResult.SetBufSize(TheSize: integer);
 begin
@@ -1684,6 +1687,7 @@ begin
          repeat until SQLite3_Step(p) in [SQLITE_DONE, SQLITE_ERROR, SQLITE_MISUSE];
        end else ShowError;
        Result := SQLite3_Finalize(p);
+       FreeBlob(p);
        if Result <> SQLITE_OK then ShowError;
  until PF^ = #0;
 end;
@@ -1761,6 +1765,7 @@ begin
        repeat until SQLite3_Step(p) in [SQLITE_DONE, SQLITE_ERROR, SQLITE_MISUSE];
 
        Result := SQLite3_Finalize(p);
+       FreeBlob(p);
        if Result <> SQLITE_OK then ShowError;
      end
    else
@@ -1920,12 +1925,13 @@ begin
                 // create memory stream to save blob;
                 pData := SQLite3_Column_blob(theStatement, i);
 
-                if BList.ContainsKey(InttoStr(NativeInt(TheStatement))) then
-                  BLOBstream := TMemoryStream(BList.GetValue(InttoStr(NativeInt(TheStatement))))
+                if BList.ContainsKey(InttoStr(NativeInt(@TheStatement))) then
+                  BLOBstream := TMemoryStream(BList.GetValue(InttoStr(NativeInt(@TheStatement))))
+//                BList.Remove(InttoStr(NativeInt(theStatement)));
                 else
                 begin
                   BlobStream := TMemoryStream.Create;
-                  BList.PutValue(InttoStr(NativeInt(theStatement)), TObject(BlobStream));
+                  BList.PutValue(InttoStr(NativeInt(@theStatement)), TObject(BlobStream));
                 end;
                 BlobStream.Clear;
                 BlobStream.Write(pData^, SQLite3_Column_bytes(theStatement, i));
@@ -1957,6 +1963,7 @@ begin
     if TheStatement <> nil then begin
        SQLite3_Reset(TheStatement);
        RV := SQLite3_Finalize(TheStatement);
+       FreeBlob(TheStatement);
        if RV <> 0 then raise AsgError.Create('SQLiteExecute error: ' + IntToStr(RV));
     end;
 end;
@@ -2781,10 +2788,24 @@ begin
   Connected := false;
   ASQLiteLog := nil;
   ASQLitePragma := nil;
-  BList.Clear;
   inherited Destroy;
   DebugLeave('TASQLite3DB.Destroy');
 end;
+procedure TASQLite3DB.FreeBlob(const rid: pointer);
+
+begin
+
+  if rid <> nil then
+
+  if BList.ContainsKey(InttoStr(NativeInt(@rid))) then
+  begin
+    TMemoryStream(BList.GetValue(InttoStr(NativeInt(@rid)))).Clear;
+    TMemoryStream(BList.GetValue(InttoStr(NativeInt(rid)))).Free;
+    BList.Remove(InttoStr(NativeInt(@rid)));
+//    BList.PutValue(InttoStr(NativeInt(p)), nil);
+  end;
+end;
+
 
 //============================================================================== TASQLite3BaseQuery
 
@@ -3999,7 +4020,7 @@ begin
         ftMemo, ftGraphic, ftBlob, ftFmtMemo, ftVariant: begin
             Stream := TMemoryStream.Create;
             Move(Pointer(Stream), (Buffer + GetFieldOffset(i + 1))^, sizeof(Pointer)+1); //2007
-            Connection.BList.PutValue(InttoStr(NativeInt(Buffer)), TObject(Stream));
+            Connection.BList.PutValue(InttoStr(NativeInt(@Buffer)), TObject(Stream));
         end;
         ftString: PAnsiChar(Buffer + GetFieldOffset(i + 1))^ := #0;
 //        ftWideString: PWideChar(Buffer + GetFieldOffset(i + 1))^ := #0;
@@ -5313,13 +5334,13 @@ begin
     begin
       Stream := TMemoryStream.Create;
       Move(Pointer(Stream), (RecBuffer + Offset)^, sizeof(Pointer)+1); //2007
-      FConnection.BList.PutValue(InttoStr(NativeInt(FDataset.FStateMent)), TObject(Stream));
+      FConnection.BList.PutValue(InttoStr(NativeInt(@FDataset.FStateMent)), TObject(Stream));
     end;
     if Assigned(Stream) then
     begin
-    Stream.Size := 0;
-    Stream.CopyFrom(Self, 0);
-    Stream.Position := 0;
+      Stream.Size := 0;
+      Stream.CopyFrom(Self, 0);
+      Stream.Position := 0;
     end;
   end;
   Position := 0; // New Memo Fix  2021
