@@ -2772,13 +2772,13 @@ end;
 constructor TASQLite3DB.Create(AOwner: TComponent);
 begin
   DebugEnter('TASQLite3DB.Create');
-  FTimeOut:= 0;
-  Connected := false;
+  inherited;
+  FTimeOut := 0;
+  Connected := False;
   FInTransaction := false;
   ASQLiteLog := nil;
   ASQLitePragma := nil;
   BList := TStrHashMap.Create(16, True);
-  inherited Create(AOwner);
   DebugLeave('TASQLite3DB.Create');
 end;
 
@@ -2850,7 +2850,7 @@ function TASQLite3BaseQuery.Lookup(const KeyFields: string; const KeyValues: Var
   const ResultFields: string): Variant;
 var OldState: TDataSetState;
 begin
-  Result := '';
+  Result := Null;
   if Locate(KeyFields, KeyValues, []) then
   begin
     if CalcFieldInList(ResultFields) then GetCalcFields(PChar(FResult.GetData(FCurRec)));
