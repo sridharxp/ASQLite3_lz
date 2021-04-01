@@ -1662,6 +1662,10 @@ begin
            else begin
              if Params[i].DataType = ftInteger then
                 SQLite3_Bind_Int(p, b, Params[i].AsInteger)
+             else if Params[i].DataType = ftSmallInt then
+                SQLite3_Bind_Int(p, b, Params[i].AsInteger)
+             else if Params[i].DataType = ftAutoInc then
+                SQLite3_Bind_Int(p, b, Params[i].AsInteger)
              else if Params[i].DataType = ftFloat then
                 SQLite3_Bind_Double(p, b, Params[i].AsFloat)
              else if Params[i].DataType = ftCurrency then
@@ -1737,6 +1741,8 @@ begin
              else begin
                if MyField.DataType = ftInteger then
                   SQLite3_Bind_Int(p, b, MyField.AsInteger)
+               else if MyField.DataType = ftSmallInt then
+                 SQLite3_Bind_Int(p, b, MyField.AsInteger)
                else if MyField.DataType = ftFloat then begin
                   dbl := MyField.AsFloat;
                   SQLite3_Bind_Double(p, b, dbl)
@@ -1999,6 +2005,8 @@ begin
        b := i + 1;
        if Params[i].DataType = ftInteger then
          SQLite3_Bind_Int(p, b, Params[i].AsInteger)
+       else if Params[i].DataType = ftSmallInt then
+         SQLite3_Bind_Double(p, b, Params[i].AsInteger)
        else if Params[i].DataType = ftFloat then
          SQLite3_Bind_Double(p, b, Params[i].AsFloat)
        else if Params[i].DataType = ftCurrency then
