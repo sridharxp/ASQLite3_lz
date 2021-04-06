@@ -1059,7 +1059,7 @@ begin
     else if vt = 'timestamp' then
     begin
       FieldType := ftTimeStamp;
-      FieldLen := 12;
+      FieldLen := 24; 
     end
 {$ENDIF}
     else if (vt = 'integer') or (vt = 'int')  then
@@ -1677,13 +1677,13 @@ begin
              else if Params[i].DataType = ftWideString then
                 SQLite3_Bind_Text16(p, b, PWideChar(VarToWideStr(Params[i].Value)), Params[i].GetDataSize, SQLITE_TRANSIENT)
              else if Params[i].DataType = ftDateTime then
-                SQLite3_Bind_Text(p, b, PChar(FormatDateTime('yyyy-mm-dd hh:nn:ss:zzz', Params[i].AsDateTime)), 23, SQLITE_TRANSIENT)
+                SQLite3_Bind_Text(p, b, PChar(FormatDateTime('yyyy-mm-ddThh:nn:ss.zzz', Params[i].AsDateTime)), 23, SQLITE_TRANSIENT)
              else if Params[i].DataType = ftTimeStamp then
-                SQLite3_Bind_Text(p, b, PChar(FormatDateTime('yyyy-mm-dd hh:nn:ss:zzz', Params[i].AsDateTime)), 23, SQLITE_TRANSIENT)
+                SQLite3_Bind_Text(p, b, PChar(FormatDateTime('yyyy-mm-ddThh:nn:ss.zzz', Params[i].AsDateTime)), 23, SQLITE_TRANSIENT)
              else if Params[i].DataType = ftDate then
                 SQLite3_Bind_Text(p, b, PChar(FormatDateTime('yyyy-mm-dd', Params[i].AsDateTime)), 10, SQLITE_TRANSIENT)
              else if Params[i].DataType = ftTime then
-                SQLite3_Bind_Text(p, b, PChar(FormatDateTime('hh:nn:ss:zzz', Params[i].AsDateTime)), 10, SQLITE_TRANSIENT)
+                SQLite3_Bind_Text(p, b, PChar(FormatDateTime('hh:nn:ss.zzz', Params[i].AsDateTime)), 10, SQLITE_TRANSIENT)
              else if Params[i].DataType in [ftMemo, ftGraphic, ftBlob, ftVariant] then
                 SQLite3_Bind_Blob(p, b, PAnsiChar(Params[i].AsBlob), Params[i].GetDataSize, SQLITE_TRANSIENT);
            end;
@@ -1755,13 +1755,13 @@ begin
                else if MyField.DataType = ftWideString then
                   SQLite3_Bind_Text16(p, b, PWideChar(VarToWideStr(MyField.Value)), Length(MyField.AsString), SQLITE_TRANSIENT)
                else if MyField.DataType = ftDateTime then
-                  SQLite3_Bind_Text(p, b, PChar(FormatDateTime('yyyy-mm-dd hh:nn:ss:zzz', MyField.AsDateTime)), 23, SQLITE_TRANSIENT)
+                  SQLite3_Bind_Text(p, b, PChar(FormatDateTime('yyyy-mm-ddThh:nn:ss.zzz', MyField.AsDateTime)), 23, SQLITE_TRANSIENT)
                else if MyField.DataType = ftTimeStamp then
-                  SQLite3_Bind_Text(p, b, PChar(FormatDateTime('yyyy-mm-dd hh:nn:ss:zzz', MyField.AsDateTime)), 23, SQLITE_TRANSIENT)
+                  SQLite3_Bind_Text(p, b, PChar(FormatDateTime('yyyy-mm-ddThh:nn:ss.zzz', MyField.AsDateTime)), 23, SQLITE_TRANSIENT)
                else if MyField.DataType = ftDate then
                   SQLite3_Bind_Text(p, b, PChar(FormatDateTime('yyyy-mm-dd', MyField.AsDateTime)), 10, SQLITE_TRANSIENT)
                else if MyField.DataType = ftTime then
-                  SQLite3_Bind_Text(p, b, PChar(FormatDateTime('hh:nn:ss:zzz', MyField.AsDateTime)), 10, SQLITE_TRANSIENT)
+                  SQLite3_Bind_Text(p, b, PChar(FormatDateTime('hh:nn:ss.zzz', MyField.AsDateTime)), 10, SQLITE_TRANSIENT)
                else if MyField.DataType in [ftMemo, ftGraphic, ftBlob, ftVariant] then
                   SQLite3_Bind_Blob(p, b, PAnsiChar(AnsiString(Fields[i].AsString)), TBlobField(Fields[i]).BlobSize, SQLITE_TRANSIENT);
            End;
@@ -2018,13 +2018,13 @@ begin
        else if Params[i].DataType = ftWideString then
          SQLite3_Bind_Text16(p, b, PWideChar(VarToWideStr(Params[i].Value)), Length(Params[i].AsString),SQLITE_TRANSIENT)
        else if Params[i].DataType = ftDateTime then
-         SQLite3_Bind_Text(p, b, PChar(FormatDateTime('yyyy-mm-dd hh:nn:ss:zzz', Params[i].AsDateTime)), 23, SQLITE_TRANSIENT)
+         SQLite3_Bind_Text(p, b, PChar(FormatDateTime('yyyy-mm-ddThh:nn:ss.zzz', Params[i].AsDateTime)), 23, SQLITE_TRANSIENT)
        else if Params[i].DataType = ftTimeStamp then
          SQLite3_Bind_Text(p, b, PChar(FormatDateTime('yyyy-mm-dd hh:nn:ss:zzz', Params[i].AsDateTime)), 23, SQLITE_TRANSIENT)
        else if Params[i].DataType = ftDate then
          SQLite3_Bind_Text(p, b, PChar(FormatDateTime('yyyy-mm-dd', Params[i].AsDateTime)), 10, SQLITE_TRANSIENT)
        else if Params[i].DataType = ftTime then
-         SQLite3_Bind_Text(p, b, PChar(FormatDateTime('hh:nn:ss:zzz', Params[i].AsDateTime)), 10, SQLITE_TRANSIENT)
+         SQLite3_Bind_Text(p, b, PChar(FormatDateTime('hh:nn:ss.zzz', Params[i].AsDateTime)), 10, SQLITE_TRANSIENT)
        else if Params[i].DataType in [ftMemo, ftGraphic, ftBlob, ftVariant] then
          SQLite3_Bind_Blob(p, b, PAnsiChar(Params[i].AsBlob), Params[i].GetDataSize, SQLITE_TRANSIENT);
     end;
@@ -5138,7 +5138,7 @@ begin
   // determine datetime style of dataset (if any)
 
   if FSQLiteDateFormat then begin
-    ThisDateFormatLong  := 'yyyy-mm-dd hh:nn:ss.zzz';
+    ThisDateFormatLong  := 'yyyy-mm-ddThh:nn:ss.zzz';
     ThisDateFormatShort := 'yyyy-mm-dd';
   end
   else if (FTableDateFormat <> '') then begin
