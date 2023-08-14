@@ -1,3 +1,7 @@
+(*
+(* Copyright (c) 2023 Sridharan S
+*)
+
 unit sQLite3Api;
 
 {$MINENUMSIZE 4}
